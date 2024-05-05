@@ -1,0 +1,21 @@
+
+
+CREATE FUNCTION CalculateTotalWithDiscount(
+    p_order_id INT,
+    p_discount_percentage DECIMAL(5,2)
+)
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_total DECIMAL(10,2);
+
+    -- Calculate the total price of all items in the order
+    SELECT SUM(quantity * unit_price) INTO v_total
+    FROM order_items
+    WHERE order_id = p_order_id;
+
+    -- Apply discount
+    RETURN v_total * (1 - (p_discount_percentage / 100));
+END$$
+
+DELIMITER ;

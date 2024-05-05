@@ -1,0 +1,18 @@
+DELIMITER $$
+
+CREATE FUNCTION CalculateOrderTotal(order_id INT)
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE total DECIMAL(10, 2) DEFAULT 0.00;
+
+    -- Calculate the total price of all items in the order
+    SELECT SUM(quantity * price) INTO total
+    FROM order_items
+    WHERE order_id = order_id;
+
+    -- Return the total price
+    RETURN total;
+END$$
+
+DELIMITER ;

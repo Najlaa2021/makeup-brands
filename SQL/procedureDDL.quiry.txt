@@ -1,0 +1,33 @@
+DELIMITER $$
+
+CREATE PROCEDURE UpdateInventory(
+    IN p_product_id INT,
+    IN p_quantity_sold INT
+)
+BEGIN
+    -- Variable to store the current inventory count
+    DECLARE v_current_inventory INT;
+
+    -- Check the current inventory level
+    SELECT inventory_count INTO v_current_inventory
+    FROM products
+    WHERE product_id = p_product_id;
+
+    -- Check if inventory is sufficient
+    IF v_current_inventory >= p_quantity_sold THEN
+        -- Update the inventory count
+        UPDATE products
+        SET inventory_count = v_current_inventory - p_quantity_sold
+        WHERE product_id = p_product_id;
+
+        -- Log the inventory change
+        INSERT INTO inventory_log(product_id, quantity_changed, change_date)
+        VALUES (p_product_id, -p_quantity_sold, NOW());
+    ELSE
+        -- Handle insufficient inventory
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Insufficient inventory for product.';
+    END IF;
+END$$
+
+DELIMITER ;

@@ -1,0 +1,49 @@
+DELIMITER $$
+
+CREATE PROCEDURE UpdateStockAndAudit(IN order_id INT)
+BEGIN
+    -- Declare variables for looping and stock calculation
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE product_id INT;
+    DECLARE quantity_ordered INT;
+    DECLARE current_stock INT;
+    DECLARE new_stock INT;
+    DECLARE cur CURSOR FOR 
+        SELECT product_id, quantity FROM order_items WHERE order_id = order_id;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Open the cursor
+    OPEN cur;
+
+    -- Start transaction
+    START TRANSACTION;
+
+    read_loop: LOOP
+        FETCH cur INTO product_id, quantity_ordered;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- Retrieve current stock
+        SELECT stock INTO current_stock FROM products WHERE product_id = product_id;
+
+        -- Calculate new stock
+        SET new_stock = current_stock - quantity_ordered;
+
+        -- Update product stock
+        UPDATE products SET stock = new_stock WHERE product_id = product_id;
+
+        -- Insert audit record
+        INSERT INTO stock_audit(product_id, old_stock, new_stock, changed_on)
+        VALUES (product_id, current_stock, new_stock, NOW());
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE cur;
+
+    -- Commit the transaction
+    COMMIT;
+
+END$$
+
+DELIMITER ;
